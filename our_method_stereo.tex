@@ -1,12 +1,36 @@
 \section{view selection for stereo}
 
-In this section, we describe our algorithm of pixel-level view selection for stereo. 
-The algorithm contains two steps. For a given pixel, we use the 
-These two steps are interleaved until a stable station is achieved. 
+1) talk about selection probability map. And how to update it given the correct estimation of depth
 
-\subsection{view selection}
- .
-Based on the observation that the nearby pixels in the reference image has high likelihood of being seen by the same sets of target images, we 
+
+In this section, we describe our algorithm of pixel-level view selection for stereo.
+The algorithm contains the steps of view selection and depthmap estimation.
+These two steps are interleaved, and proceed until the stable state is achieved.
+
+We develop the view selection scheme based on the observation that the nearby pixels on the reference image has high likelihood of being seen by the same sets of target images.
+
+\subsection{Color consistency check}
+
+
+
+
+
+
+
+\subsection{selection probability map}
+
+Given a pixel on the reference image and its true depth, we can find the corresponding pixel on a target image. However, the two pixels might have low color consistency due to object occlusion, high view perspective, image distortion, calibration error etc. In the case of multiple view stereo, for each pixel it is important to select the right target image sets to recover its correct depth. For easier explanation, We label the reference image $I^{ref}$, and the set of n target images $I^i$, $i = 1...n$. The target images are used to recover the depth of the reference image.
+
+To achieve this, we introduce a selection probability volume $S$ of size $w$X$h$X$n$, in which $w$ and $h$ are the width and height of the $I^{ref}$. We denote the value of pixel p on slice i in $S$ as $P^i_p$. $P^i_p$ is the probability of $I^i$ being selected to recover the depth of pixel $p$ on $I^{ref}$. Small value of $P^i_p$ means it has no use or might harm to recover the right depth of pixel $p$. Selection probability map actually reflects the factors mentioned above that might result in low color consistency even if the depth is correct.
+
+Under the condition that the right depth for a pixel $p$ is available, we are able to define $P^i_p$ by checking the color consistency. In this paper, we use normalized cross correlation to compare two color patches. NCC(p, H(p)).
+
+
+
+\subsection{depthmap estimation}
+
+
+
 
 
 
