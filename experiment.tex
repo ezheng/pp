@@ -1,0 +1,14 @@
+\section{experimental results} \label{sec:experiment}
+
+We test our algorithm on the strecha' data (fountain-P11 and Herzjesu-P9) and internet collected photos. Each depthmap is applied median filter as postprocessing before it is evaluated.
+
+To calculate the depthmap, we put all the images in each set into our algorithm. As contrast to some algorithm of depthmap calculation, our algorithm does not need to manually select the images around the reference view. For the schecha's data, groundtruth is obtained by projecting the 3D mesh model on each of the camera. We calculate the number of pixels with depth less than 2cm and 10cm from the ground truth, and compare it with [][][]. The same with [], two extreme views are not included in evaluation. As is shown in Table...
+
+
+We tested our algorithm on the internet collected data for three different scene Berlin Cathedral, Brandenburg Gate, and Notre Dame. 50 images for each scene are randomly downloaded from internet. These images can have large variety as is shown in Fig[]. For instance, the images are taken under different weather and time, so the illumination can be different. There may be some foreground object in front. We perform the following experiments. The poses of cameras are calculated using Changchang's visual SFM tool. We put all the 50 images together with the camera parameters into our algorithm. After two to three iterations, the algorithm reaches a stable state. The depth of one image in the set together with its original image are show in Fig[].
+
+
+
+
+
+
