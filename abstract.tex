@@ -1,9 +1,5 @@
 \begin{abstract}
-   The ABSTRACT is to be in fully-justified italicized text, at the top
-   of the left-hand column, below the author and affiliation
-   information. Use the word ``Abstract'' as the title, in 12-point
-   Times, boldface type, centered relative to the column, initially
-   capitalized. The abstract is to be in 10-point, single-spaced type.
-   Leave two blank lines after the Abstract, then begin the main text.
-   Look at previous CVPR abstracts to get a feel for style and length.
-\end{abstract}
+We propose a novel method of depthmap calculation given multiple calibrated images . While most methods need users to pick up the nearby images around reference view, our method is able to find useful information from the image set automatically. To recover the depth of some pixels in the reference image, certain target images may introduce noisy information because of the factors such as occlusion, different perspective, etc. By contrast to the traditional stereo algorithm, our method is able to automatically explore and select target images to do stereo for each pixel on the reference image. It is nontrivial to select right target images, which is especially true if the images are unstructured (e.g. the internet collected photos). Our algorithm, which is an extension of the two-view patchMatch stereo, interleaves the steps of view selection and stereo until a stable state is reached. The computation load is reduced since only parts of the image set are used for each pixel's depth recovery. Besides that, our algorithm can be parallelized. The algorithm is tested on the strecha's data set, and it reaches state-of-art precision. Also we test our algorithm on the unstructured images randomly downloaded from internet.
+\end{abstract} 
+
+

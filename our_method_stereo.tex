@@ -1,43 +1,56 @@
-\section{view selection for stereo}
+\section{view selection for stereo} \label{sec:view_selection_stereo}
 
-1) talk about selection probability map. And how to update it given the correct estimation of depth
+In this section , we describe our algorithm of pixel-level view selection for stereo. The algorithm contains the steps of selection probability map ($SPM$ is introduced in Section \ref{subsec:spm}) calculation and depthmap estimation. These two interleaved steps proceed until the stable state is reached. The proposed algorithm has the similar idea of Expectation-maximization(EM) algorithm. In the step of selection probability map calculation, we assume the depth is correct, and calculate $SPM$. The $SPM$ is propagated into neighboring pixels using median filter (gaussian filter also works similarly), because the neighboring pixels should have the similar set of target images. In the step of depthmap estimation, the images are drawn according to the $SPM$.
 
+\subsection{model}
+Before start, we have the following notation for easier explanation.  We label the reference image $I_{ref}$, and the set of n target images $I_i$, $i = 1...n$. The target images are used to recover the depth of the reference image. In this paper, the subscript $ref$ and $i$ denotes the corresponding property belonging to the reference image and target image $i$.
 
-In this section, we describe our algorithm of pixel-level view selection for stereo.
-The algorithm contains the steps of view selection and depthmap estimation.
-These two steps are interleaved, and proceed until the stable state is achieved.
+The images used for stereo are not rectified. For a given patch on the reference image centered at pixel $p = (x,y)$ with depth $d$, we use the following homography matrix $H$ to find the corresponding patch on image $i$:
+\begin{equation}
+H_i = K_i(R_i - \textbf{t}_i\textbf{n}^\intercal/d )K_{ref}
+\end{equation}  \label{equ:homography}
+where $R$ and $\textbf{t}$ are the relative rotation matrix and $K$ is the camera calibration matrix. $\textbf{n}$ is the orientation of the hypothesis plane used for inducing the homography. Since this paper only uses frontal-parallel planes to do the warping, $\textbf{n}$ is set to $[0,0,1]^\intercal$. Similar to \cite{patchMatchStereo1}\cite{patchMatchStereo2}, we can also use slanted planes to do the warping.
 
-We develop the view selection scheme based on the observation that the nearby pixels on the reference image has high likelihood of being seen by the same sets of target images.
+This paper uses normalized cross correlation (NCC) to check the color consistency between the two patches in $I_ref$ and $I_i$:
+\begin{equation} 
+    m_i(p,d) = \frac{1}{|W_p|} \frac{\sum\limits_{q\in{W_p}}{(I_{ref}^q - \bar{I}_{ref}^q)  (I_{i}^l - \bar{I}_{i}^l)}}
+        {\sqrt{\sum\limits_{q\in{W_p}}{(I_{ref}^q - \bar{I}_{ref}^q)^2}  \sum\limits_{q\in{W_p}}{(I_{i}^l - \bar{I}_{i}^l)^2}    } }   \label{equ:ncc}
+\end{equation}
+where $W_p$ denotes a square window centered on pixel p. $l$ is the pixel position in the target image $l = H_i*q$. $\bar{I}_{ref}^q$ and $\bar{I}_{i}^l$ are the mean value of the patch in $I_{ref}$ and $I_i$. 
 
-\subsection{Color consistency check}
+For using multiple target images in set $\{S\}$, the cost function is defined as sum of cost from each target image:
+\begin{equation}
+    M(p,d,{S}) = \sum_{i\in{\{S\}}}{m_i(p,d)}.\label{equ:totalcost}
+\end{equation}
+Note we use NCC as cost function, bigger $M(p,d)$ means better color consistency.
 
+\subsection{selection probability map} \label{subsec:spm}
+Given a pixel and its true depth, it is possible it has low color consistency in some target images because of the factors such as occlusion and large perspective difference. So these target images should not be used to calculate the pixel depth. In order to achieve this, we introduce $n$ selection probability map $SPM_i$ of size $w$ x $h$, in which $w$ and $h$ are the width and height of $I_{ref}$, $n$ is the number of target images. One $SPM$ is used for each target image. We denote the value of pixel $p$ on $SPM_i$ as $SPM^p_i$. $SPM^p_i$ means the probability of $I_i$ being selected to recover the depth of pixel $p$ on $I_{ref}$. Small value of $SPM^p_i$ means it has low probability of being selected for calculating depth on pixel $p$. Selection probability map actually reflects the factors mentioned above that might result in low color consistency under correct depth.
 
+In the assumption that the right depth $d$ for a pixel is available, we are able to define $SPV^p_i$ by checking the color consistency: 
+\begin{equation}
+    SPM^p_i = \exp(\frac{1 - m_i(p,d)}{\sigma^2}).\label{equ:spm}
+\end{equation}
+Since NCC value is in the range $[-1, 1]$ and the bigger value means better color consistency, we use $1 - m_i(p,d)$ instead of $m_i(p,d)$. Equ.\ref{equ:spm} can be changed accordingly if other cost functions are deployed. 
 
+After the $SPM$ is calculated based on Equ. \ref{equ:spm}, we apply median filter on each $SPM$. Because it is not guaranteed all the true depth is available, filtering helps remove noise and propagate the correct selection probability.
 
-
-
-
-\subsection{selection probability map}
-
-Given a pixel on the reference image and its true depth, we can find the corresponding pixel on a target image. However, the two pixels might have low color consistency due to object occlusion, high view perspective, image distortion, calibration error etc. In the case of multiple view stereo, for each pixel it is important to select the right target image sets to recover its correct depth. For easier explanation, We label the reference image $I^{ref}$, and the set of n target images $I^i$, $i = 1...n$. The target images are used to recover the depth of the reference image.
-
-To achieve this, we introduce a selection probability volume $S$ of size $w$X$h$X$n$, in which $w$ and $h$ are the width and height of the $I^{ref}$. We denote the value of pixel p on slice i in $S$ as $P^i_p$. $P^i_p$ is the probability of $I^i$ being selected to recover the depth of pixel $p$ on $I^{ref}$. Small value of $P^i_p$ means it has no use or might harm to recover the right depth of pixel $p$. Selection probability map actually reflects the factors mentioned above that might result in low color consistency even if the depth is correct.
-
-Under the condition that the right depth for a pixel $p$ is available, we are able to define $P^i_p$ by checking the color consistency. In this paper, we use normalized cross correlation to compare two color patches. NCC(p, H(p)).
-
-
+When calculating the depth for pixel $p$, samples are drawn based on $SPM^p$. The probability that image $i$ will be selected for stereo is $SPM^p_i/\sum_{i = 1}^n{SPM^p_i}$. Number of samples $N$ is predefined by users. If the same target images are sampled multiple times, only one is used. So in this case, it is possible the number of images used for each pixel is less than $N$. This makes more sense than fixing the number of images to calculate the depth for each pixel. Note we do not directly apply normalization on Equ. \ref{equ:spm} as normalization term is different for different pixels, and this will make media filter get wrong selection probability map.
 
 \subsection{depthmap estimation}
+Given a set of target images $\{S\}$, we are able to estimate the depth for a given pixel. We use the patchMatch stereo \cite{patchMatchStereo3} that can be parallelized. 
+The depth for each pixel is randomly initialized. In the first sweep, the propagation is from left to right. The left pixel's depth $d^{(x-1,y)}$, the current pixel's depth $d^{(x,y)}$ and a random depth $d^r$ are checked on the current pixel position, and the depth with the best color consistency is assigned to the current pixel.
+\begin{equation}    
+    d^{(x,y)} = argmax( M(p,d^{(x-1, y)}, {S}), M(p,d^{x,y},{S}), M(p,d^r,{S}))   \label{equ:patchmatch}
+\end{equation} 
+Note when doing the sweep, each pixel's depth is updated before used in the next pixel's computation. This sweep can be parallelized since each row is independent. The similar sweeps are done from top-to-bottom, right-to-left and down-to-top. If we count these four sweeps as one iteration, normally after 2 to 3 iterations the stable depthmap can be obtained.
 
+\subsection{algorithm}
+This section describes in detail how we interleave the steps of selection probablity estimation and depthmap estimation. The selection probability map is randomly initialized in the range $[0, 1]$, and depthmap is randomly initialized in the possible depth range. 
 
+One iteration includes four sweeps of different directions. In the first sweep from left to right, to calculate the depth of pixel $p = (x, y)$, the target images are drawn based on $SPM^{(x-1,y)}$, which is the slelection probability of the left pixel. The reason we choose $SPM^{(x-1,y)}$ instead of $SPM^(x,y)$ is because $SPM^(x-1,y)$ is calculated instead of randomly initialized, and it has higher chance of being right. The experiments also shows using $SPM^(x-1,y)$ in the first iteration converges faster and produce better results. In the next few iterations, we choose $SPM^(x,y)$ to sample target images. After samples are drawn based on $SPM^(x-1,y)$. Equ. \ref{equ:patchmatch} is used to find the best depth for $p$. Then selection probability map $SPM^{(x,y)}$ is updated using the available depth and Equ. \ref{equ:spm}. Also, we found under the condition the number of target images are large, and only one of them can see a region in $I_{ref}$, it gets better result if the number of sample image $N$ is set to one in the first iteration. It is reasonable since under this condition, sampling more images have lower chance to get the right target image. The same thing is done for the other three sweeps in the first iteration. After each sweep, we apply median filter to all the $SPM$ to remove noise and propagate the right selection probability. 
 
-
-
-
-
-
-
-
+In the following iterations, we draw samples based on the $SPV^{(x,y)}$. The pseudopod for the algorithm is described in figure[]. 
 
 
 
